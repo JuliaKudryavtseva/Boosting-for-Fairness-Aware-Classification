@@ -1,9 +1,6 @@
 """
-The implementation of AdaFair.
+The implementation of AdaFair: Cumulative Fairness Adaptive Boosting.
 """
-# Based on the work of the following paper: 
-# [1] V. Iosifidis, et E. Ntoutsi, « AdaFair: Cumulative Fairness
-#     Adaptive Boosting ».
 
 import numpy as np
 import pandas as pd
@@ -94,8 +91,8 @@ class AdaFair(BaseEstimator, ClassifierMixin):
     Args:
         base_clf: object, this base estimator is used to build a boosted ensemble, which supports for sample weighting.
         n_ests: int, number of base estimators.
-        epsilon [default=1e-3]: float, the error threshold.
-        c: float, the balancing coefficient for number of base classifier optimizer.
+        epsilon [default=1e-4]: float, the error threshold.
+        c: float in [0,1], the balancing coefficient for number of base classifier optimizer.
         fairness_cost [default=None]: function, is used to predict.
 
     Attributes:
@@ -112,7 +109,7 @@ class AdaFair(BaseEstimator, ClassifierMixin):
         self.base_clf = kwargs.get("base_clf", base_clf = DecisionTreeClassifier(max_depth=1))
         self.n_ests = kwargs.get("n_ests", n_ests = 100)
         self.c = kwargs.get("c", c = 1)
-        self.epsilon = kwargs.get("fairness_cost", epsilon = 1e-3)
+        self.epsilon = kwargs.get("fairness_cost", epsilon = 1e-4)
         self.fairness_cost = kwargs.get("fairness_cost", fairness_cost = None)
 
     def fit(self, X, y, sensitive = None):    
@@ -167,9 +164,9 @@ class AdaFair(BaseEstimator, ClassifierMixin):
 
             # Balanced Error Rate score
             BER = 1 - (TP / (TP + FN) + TN / (TN + FP)) / 2
-            #Error Rate score
+            # Error Rate score
             ER = (FN + FP) / (TP + TN + FN + FP)
-            #Equalized Odds classification score
+            # Equalized Odds classification score
             DFPR, DFNR = DFR_score (y, sign_y, sensitive)
             EO = abs(DFPR) + abs(DFNR)
             
