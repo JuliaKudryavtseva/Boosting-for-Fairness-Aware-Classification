@@ -54,6 +54,7 @@ class SMOTEBoostClassifier(BaseEstimator, ClassifierMixin):
 
     weights_ : array of shape (n_estimators,)
         The weights for each estimator in the boosted ensemble.
+        
     """
     
 
@@ -85,16 +86,13 @@ class SMOTEBoostClassifier(BaseEstimator, ClassifierMixin):
         """
         # Checks X and y for consistent length
         X, y = check_X_y(X, y)
-        
-        # Check that the base estimator is a classifier
-        if not is_classifier(self.base_classifier):
-            raise ValueError("The base estimator must be a classifier")
                              
-        # Check that the it is a binary classification problem
+        # Check the binary classification problem
         check_classification_targets(y)
-        n_classes = len(np.unique(y))
+        
         if type_of_target(y) != "binary":
-            raise ValueError("Target values should belong to a binary set, "                              "but {} classes were found.".format(n_classes))
+            raise ValueError("Target values should be binary")
+           
         
         # Initialize lists to hold models and model weights
         self.classifiers_ = []
@@ -109,13 +107,12 @@ class SMOTEBoostClassifier(BaseEstimator, ClassifierMixin):
         smote = SMOTE(k_neighbors=self.k_neighbors)
         smote.fit(X_minor_samples)
 
-        # Distribution initialization
-        dist = np.ones_like(X) / len(y) 
-        
-        for i in range(len(y)):
-            dist[i, np.where(self.classes_ == y[i])] = 0
+        # Distribution initialization with adjustment
+        dist = np.ones_like(X) / len(y)
+        dist[:, :2][self.classes_ == y[:, np.newaxis]] = 0
 
-        for i in range(self.n_estimators):
+
+        for j in range(self.n_estimators):
             
             # Create new syntatical samples of the minority class
             X_synatical = smote.sample(self.n_syn_samples)
@@ -127,30 +124,26 @@ class SMOTEBoostClassifier(BaseEstimator, ClassifierMixin):
 
             # Train a weak estimator on the modified distribution
             self.classifiers_.append(clone(self.base_classifier))     
-            self.classifiers_[i].fit(X_smote, y_smote)
+            self.classifiers_[j].fit(X_smote, y_smote)
 
             # Compute weak hypothesis
-            h = self.classifiers_[i].predict_proba(X) 
+            h = self.classifiers_[j].predict_proba(X) 
 
             # Compute the pseudo-loss of hypothesis and weights
-            epsilon = 0
-            for t in range(len(y)):
-                for i in range(n_classes):
-                    
-                    # Sum of D_t (i, y ) * (1 - h_t ( x_i , y_i ) h_t ( x_i , y_i ))
-                    epsilon += dist[t, i] * (1.- h[t, np.where(self.classes_ == y[t])] + h[t, i])
+            # Sum of D_t (i, y ) * (1 - h_t ( x_i , y_i ) h_t ( x_i , y ))
+            h_new = np.zeros_like(h)
+            h_new = h[:, :2][self.classes_ == y[:, np.newaxis]]
+            epsilon = np.sum(dist[:, :2] * (1 - h_new[:,  np.newaxis] + h[:, :2]))
                     
             beta = epsilon / (1. - epsilon)
             self.weights_.append(np.log(1 / beta))
 
             # Update distribution where Z is a normalization constant
             z = np.sum(dist)
-            for t in range(len(y)):
-                for i in range(n_classes):
-                    
-                    exp = (1. + h[t, np.where(self.classes_ == y[t])[0][0]] - h[t,i]) / 2
-                    dist[t,i] = dist[t, i] / z * beta**exp
-    
+            exp = 0.5 * (1. + h_new[:,  np.newaxis] - h[:, :2])
+            dist[:, :2] = dist[:, :2] / (z * beta**exp)
+            
+                        
     def predict(self, X):
         """Predict classes for input sample X.
         
