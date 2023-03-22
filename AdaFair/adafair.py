@@ -12,7 +12,39 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.multiclass import check_classification_targets, type_of_target
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.tree import DecisionTreeClassifier
-from .metrics import ber_score, er_score, eq_odds_score
+
+def DFR_score (y_true, y_pred, sensitive):
+    """
+    DFPR_score: the difference between sensitive and non-sensitive False Positive Rates.
+    DFNR_score: the difference between sensitive and non-sensitive False Negative Rates
+    
+    Args:
+        y_true: ground truth (correct) labels.
+        y_pred: predicted labels
+        sensitive: array-like of shape, indicates sensitive sample. 
+        
+    Returns:
+        DFPR_score: float (the closer to 0, the lesser is disparate mistreatment)
+        DFNR_score: float (the closer to 0, the lesser is disparate mistreatment)
+    """
+    wrong = y_true != y_pred
+    neg = y_true == 0
+    pos = y_true == 1
+
+    neg_s = np.sum(neg[sensitive])
+    neg_ns = np.sum(neg[~sensitive])
+    pos_s = np.sum(pos[sensitive])
+    pos_ns = np.sum(pos[~sensitive])
+
+    a1 = np.sum(wrong[sensitive] & neg[sensitive]) / neg_s if neg_s > 0 else 1
+    b1 = np.sum(wrong[~sensitive] & neg[~sensitive]) / neg_ns if neg_ns > 0 else 1
+    a2 = np.sum(wrong[sensitive] & pos[sensitive]) / pos_s if pos_s > 0 else 1
+    b2 = np.sum(wrong[~sensitive] & pos[~sensitive]) / pos_ns if pos_ns > 0 else 1
+
+    DFPR_score = a1 - b1
+    DFNR_score = a2 - b2 
+
+    return DFPR_score, DFNR_score
 
 def fairness_cost(y_true, y_pred, y_preds, sensitive, eps):
     """
@@ -31,42 +63,27 @@ def fairness_cost(y_true, y_pred, y_preds, sensitive, eps):
     f_cost = np.zeros((len(y_true),))
 
     if sensitive is None:
-        s = np.zeros(len(y_preds)).astype(bool)
+        s = np.zeros(len(y_pred)).astype(bool)
     else:
         s = sensitive
 
-    wrong = y_true != y_preds
-    neg = y_true == 0
-    pos = y_true == 1
+    DFPR, DFNR = DFR_score (y_true, y_preds, s)
 
-    neg_s = np.sum(neg[s])
-    neg_ns = np.sum(neg[~s])
-    pos_s = np.sum(pos[s])
-    pos_ns = np.sum(pos[~s])
-
-    a1 = np.sum(wrong[s] & neg[s]) / neg_s if neg_s > 0 else 1
-    b1 = np.sum(wrong[~s] & neg[~s]) / neg_ns if neg_ns > 0 else 1
-    a2 = np.sum(wrong[s] & pos[s]) / pos_s if pos_s > 0 else 1
-    b2 = np.sum(wrong[~s] & pos[~s]) / pos_ns if pos_ns > 0 else 1
-
-    dfpr = a1 - b1
-    dfnr = a2 - b2 
-    
     pos_protect = ((y_true == 1) & ~s).astype(int)
     pos_unprotect = ((y_true == 1) & s).astype(int)
     neg_protect= ((y_true == -1) & ~s).astype(int)
     neg_unprotect = ((y_true == -1) & s).astype(int)
     
-    if abs(dfnr) > eps:
-        if dfnr > 0:
-            f_cost[pos_protect & (y_true[pos_protect] != y_pred[pos_protect])] = abs(dfnr) 
-        elif dfnr < 0:
-            f_cost[pos_unprotect & (y_true[pos_unprotect] != y_pred[pos_unprotect])] = abs(dfnr) 
-    if abs(dfpr) > eps:
-        if dfpr > 0:
-            f_cost[neg_protect & (y_true[neg_protect] != y_pred[neg_protect])] = abs(dfpr) 
-        elif dfpr < 0:
-            f_cost[neg_unprotect & (y_true[neg_unprotect] != y_pred[neg_unprotect])] = abs(dfpr) 
+    if abs(DFNR) > eps:
+        if DFNR > 0:
+            f_cost[pos_protect & (y_true[pos_protect] != y_pred[pos_protect])] = abs(DFNR) 
+        elif DFNR < 0:
+            f_cost[pos_unprotect & (y_true[pos_unprotect] != y_pred[pos_unprotect])] = abs(DFNR) 
+    if abs(DFPR) > eps:
+        if DFPR > 0:
+            f_cost[neg_protect & (y_true[neg_protect] != y_pred[neg_protect])] = abs(DFPR) 
+        elif DFPR < 0:
+            f_cost[neg_unprotect & (y_true[neg_unprotect] != y_pred[neg_unprotect])] = abs(DFPR) 
 
     return f_cost
 
@@ -140,18 +157,32 @@ class AdaFair(BaseEstimator, ClassifierMixin):
             distribution = 1/1.*distribution*np.exp(alpha*cfd*(y_af!=y_pred))*(1+f_cost)
 
             # Get the sign of the weighted predictions
-            y_preds_s = np.sign(y_preds)
-            y_preds_s = (1 + y_preds_s) / 2
+            sign_y = np.sign(y_preds)
+            sign_y = (1 + sign_y) / 2
             
-            # Find the optimal number of base classifiers, as the minimum of the sum of BER, ER and Eq.Odds scores
+            TP  = ((y == 1) & (sign_y == 1)).sum()
+            TN = ((y == 0) & (sign_y == 0)).sum()
+            FP = ((y == 0) & (sign_y == 1)).sum()
+            FN = ((y == 1) & (sign_y == 0)).sum()
+
+            # Balanced Error Rate score
+            BER = 1 - (TP / (TP + FN) + TN / (TN + FP)) / 2
+            #Error Rate score
+            ER = (FN + FP) / (TP + TN + FN + FP)
+            #Equalized Odds classification score
+            DFPR, DFNR = DFR_score (y, sign_y, sensitive)
+            EO = abs(DFPR) + abs(DFNR)
+            
             c = self.c
-            error = c * ber_score(y, y_preds_s) + (1-c) * er_score(y, y_preds_s) + eq_odds_score(y, y_preds_s, sensitive)
-            
+            error = c * BER + (1-c) * ER + EO
             if min_error > error:
+            # The minimum of the sum of BER, ER and Eq.Odds scores
                 min_error = error
+            # The optimal number of base classifiers
                 self.opt = i + 1
                 
         return self
+
     def predict(self, X, end="optimum"):
         
         if end == "optimum":
@@ -161,7 +192,7 @@ class AdaFair(BaseEstimator, ClassifierMixin):
 
         for alpha, clf in zip(self.list_alpha[:end], self.list_clfs[:end]):
             final_pred += alpha * clf.predict(X)
-        
+
         final = int((1 + np.sign(final_pred)) / 2)
 
         return self.labels[final]
