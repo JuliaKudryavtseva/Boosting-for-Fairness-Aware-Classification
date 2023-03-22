@@ -21,7 +21,11 @@ from sklearn.base import is_classifier, clone
 import numpy as np
 
 from sklearn.tree import DecisionTreeClassifier
-from smote_sampler import SMOTE
+
+try:
+    from .smote_sampler import SMOTE
+except:
+    from smote_sampler import SMOTE
 
 
 class SMOTEBoostClassifier(BaseEstimator, ClassifierMixin):
