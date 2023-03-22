@@ -14,23 +14,6 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.tree import DecisionTreeClassifier
 from .metrics import ber_score, er_score, eq_odds_score
 
-def alpha(y_true, y_pred, distribution):
-  """
-    Compute the weight for a current base estimator.
-    
-    Args:
-        y_true: 1-D array, the true target values.
-        y_pred: 1-D array, the predicted values.
-        distribution: 1-D array, the weights of training instances.
-    
-    Returns:
-        alpha: float, the weight for current base estimator.
-  """
-  n = ((y_true != y_pred) * distribution).sum() / distribution.sum()
-  alpha = np.log((1-n)/n) / 2
-
-  return alpha
-
 def fairness_cost(y_true, y_pred, y_preds, sensitive, eps):
     """
     Compute the fairness cost for sensitive features.
