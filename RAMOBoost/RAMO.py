@@ -7,32 +7,33 @@ from sklearn.preprocessing import normalize
 
 
 class RankedMinorityOversampler:
-    """Implementation of Ranked Minority Oversampling (RAMO).
-    Oversample the minority class by picking samples according to a specified
+    """This class implements the Ranked Minority Oversampling (RAMO) technique.
+    It oversamples the minority class by selecting samples based on a specified
     sampling distribution.
     """
     
     def __init__(self, k_neighbors_1=5, k_neighbors_2=5, alpha=0.3, random_state=None):
         """
+        Constructor for the RankedMinorityOversampler class.
+
         Parameters
         ----------
         k_neighbors_1 : int, optional (default=5)
-            Number of nearest neighbors used to adjust the sampling probability of
-            the minority examples.
+            Number of nearest neighbors to consider when adjusting the sampling probability
+            for minority examples.
         k_neighbors_2 : int, optional (default=5)
-            Number of nearest neighbors used to generate the synthetic data
-            instances.
+            Number of nearest neighbors to consider when generating synthetic data instances.
         alpha : float, optional (default=0.3)
-            Scaling coefficient.
+            Scaling coefficient used for generating synthetic data instances.
         random_state : int or None, optional (default=None)
-            If int, random_state is the seed used by the random number generator.
-            If None, the random number generator is the RandomState instance used
-            by np.random.
+            Seed used by the random number generator. If None, the generator is initialized
+            using the RandomState instance of numpy.
         """
         self.k_neighbors_adjustment = k_neighbors_1
         self.k_neighbors_synthetic_data = k_neighbors_2
         self.alpha = alpha
         self.random_state = random_state
+
     
     def generate_synthetic_samples(self, n_samples):
         """Generate synthetic samples.
