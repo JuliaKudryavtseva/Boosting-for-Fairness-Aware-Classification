@@ -162,7 +162,6 @@ class AdaFair(BaseEstimator, ClassifierMixin):
         for alpha, clf in zip(self.list_alpha[:end], self.list_clfs[:end]):
             final_pred += alpha * clf.predict(X)
         
-        out = np.sign(final_pred)
-        out = ((1 + out) / 2).astype(int)
+        final = int((1 + np.sign(final_pred)) / 2)
 
-        return self.labels[out]
+        return self.labels[final]
