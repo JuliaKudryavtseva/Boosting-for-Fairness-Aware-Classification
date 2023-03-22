@@ -85,7 +85,7 @@ def get_fairness_cost(y_true, y_pred, y_preds, sensitive, eps):
 
     return f_cost
 
-class AdaFair(BaseEstimator, ClassifierMixin):
+class AdaFairClassifier(BaseEstimator, ClassifierMixin):
     """
     AdaFair Classifier
 
