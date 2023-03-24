@@ -43,7 +43,7 @@ class SMOTE:
         self.X = check_array(X)
         self.n_features_in_ = self.X.shape[1]
 
-        # Fit nearest neighbors
+        # Fit knn
         n_neighbors = self.k_neighbors_ + 1
         self.neigh = NearestNeighbors(n_neighbors=n_neighbors)
         self.neigh.fit(self.X)
@@ -74,8 +74,6 @@ class SMOTE:
             # Take the k nearest neighbours 
             X_j = self.X[j].reshape(1, -1)
             neighbors = self.neigh.kneighbors(X_j, return_distance=False)
-            
-            # Drop X[j], the first one
             neighbors = neighbors[:, 1:][0]
             
             # Select one of the k neighbours
