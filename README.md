@@ -4,4 +4,13 @@ The project focuses on fairness-aware classification in machine learning, aiming
 
 
 # Results
+
+SMOTEBoost, AdaFair, CUSBoost, and RAMOBoost effectively eliminate bias in
+four real-world datasets: Adult census, COMPAS, Bank, and KDD. 
+
+These datasets are notorious for being imbalanced and biased against certain protected groups, and therefore pose significant challenges for building fair and accurate classifiers.
+
+![image](https://user-images.githubusercontent.com/67862423/227771325-b6f3156a-add8-4c70-927d-3ce604cee8f3.png)
+
+
 ![image](https://user-images.githubusercontent.com/67862423/227771090-6c1d14d7-e931-4a86-a460-0896fe2b0792.png)
