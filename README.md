@@ -6,11 +6,12 @@ The project focuses on fairness-aware classification in machine learning, aiming
 pip install -r requirements.txt
 ```
 # Run experiments
+
+It is possible to run the code from Colab and reproduce the results using the notebook:
+```
 run reproduce_results.ipynb
-
-or
-
-get the ready results from the folder "results"
+```
+or get the DataFrame containing all our results by downloading the csv files from our folder "results" in this repsoitory.
 
 # Results
 
