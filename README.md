@@ -4,4 +4,4 @@ The project focuses on fairness-aware classification in machine learning, aiming
 
 
 # Results
-![fig_results](https://user-images.githubusercontent.com/67862423/227771042-0eafce50-1ce6-49dc-b70d-da798e29eecb.png)
+![image](https://user-images.githubusercontent.com/67862423/227771090-6c1d14d7-e931-4a86-a460-0896fe2b0792.png)
