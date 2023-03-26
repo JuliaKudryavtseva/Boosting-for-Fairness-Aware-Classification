@@ -21,5 +21,4 @@ These datasets are notorious for being imbalanced and biased against certain pro
 
 ![image](https://user-images.githubusercontent.com/67862423/227771325-b6f3156a-add8-4c70-927d-3ce604cee8f3.png)
 
-
-![image](https://user-images.githubusercontent.com/67862423/227771090-6c1d14d7-e931-4a86-a460-0896fe2b0792.png)
+![image](https://user-images.githubusercontent.com/67862423/227772295-afb8fb73-b8ee-4625-b9ff-829426c19ce3.png)
