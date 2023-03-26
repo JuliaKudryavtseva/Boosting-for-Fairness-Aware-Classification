@@ -1,1 +1,7 @@
 imblearn
+scipy
+numpy
+scikit-learn
+pandas
+tqdm
+collections
