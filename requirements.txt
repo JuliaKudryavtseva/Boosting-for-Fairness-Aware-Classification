@@ -1,7 +1,7 @@
 imblearn
 scipy
 numpy
-scikit-learn
+scikit-learn==1.0.2
 pandas
 tqdm
-collections
+matplotlib
